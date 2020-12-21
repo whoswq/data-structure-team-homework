@@ -1,0 +1,6 @@
+1.0版本
+
+bacteria: lifetime=15, hunger=5, tig=5, rp_prob = 1
+food: lifetime=15
+field: __food_gen_corr = 0.5 
+       __food_gen_prob = 0.01

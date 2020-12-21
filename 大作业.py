@@ -1,6 +1,11 @@
+"""
+细菌繁殖的简单模拟，忽略菌落的结构，仅从数量和行为特征两个方面进行模拟
+有点大问题，这些方法如何与图形界面配合
+"""
 import numpy as np
-import matplotlib.pylab as plt
-import pickle
+from tkinter import *
+import time
+import os
 
 
 class Bacteria():
@@ -8,9 +13,9 @@ class Bacteria():
     细菌类
     """
     __num = 0  # 记录Bacteria类中实例数量
-    rp_prob = 1  # 记录Bacteria实例达到分裂条件时的分裂概率
+    rp_prob = 0.8  # 记录Bacteria实例达到分裂条件时的分裂概率
 
-    def __init__(self, lifetime=15, hunger=5, tig=5):
+    def __init__(self, lifetime=20, hunger=3, tig=3):
         self.lifetime = lifetime  # 细菌寿命
         self.hunger = hunger  # 饥饿值
         self.tig = tig  # 分裂的触发条件
@@ -46,7 +51,7 @@ class Food():
     """
     __num = 0  # 记录Food实例数量
 
-    def __init__(self, lifetime=15):
+    def __init__(self, lifetime=40):
         Food.__num += 1
         self.lifetime = lifetime  # Food实例的寿命
 
@@ -68,8 +73,8 @@ class Field():
     """
     表示一块可供细菌活动的区域，要求此类有且仅有一个实例
     """
-    __food_gen_prob = 0.0
-    __food_gen_corr = 0.01  # 食物产生概率与周围食物数量之间的关系
+    __food_gen_prob = 0.6
+    __food_gen_corr = 0.05  # 食物产生概率与周围食物数量之间的关系
     __food_distribution = None  # 记录食物产生概率的列表
     size = 0
     __food_num = []  # 记录每次更新之后食物的数量
@@ -204,8 +209,8 @@ class Field():
                         # 当饥饿值大于设定值，触发分裂条件，有一定概率分裂
                         r = np.random.random_sample()
                         if r < Bacteria.rp_prob and empty_pos != []:  # 判断是否分裂
-                            new_bac = Bacteria()
                             old.hunger -= 1
+                            new_bac = Bacteria()
                             new_pos = empty_pos[np.random.randint(
                                 len(empty_pos))]
                             self.__state[new_pos[0]][new_pos[1]] = new_bac
@@ -273,7 +278,7 @@ class Field():
             return True
 
     @classmethod
-    def set_food_gen_prob(cls, prob=0.01):
+    def set_food_gen_prob(cls, prob=0.2):
         Field.__food_gen_prob = prob
 
     @classmethod
@@ -281,7 +286,7 @@ class Field():
         return Field.__food_gen_prob
 
     @classmethod
-    def set_food_gen_corr(cls, corr=0.5):
+    def set_food_gen_corr(cls, corr=0.05):
         Field.__food_gen_corr = corr
 
     @classmethod
@@ -306,20 +311,103 @@ class Field():
 
 
 if __name__ == "__main__":
-    field = Field(50)
-    for i in range(200):
-        x = np.random.randint(0, 49)
-        y = np.random.randint(0, 49)
+    """list_b = []
+    for i in range(10):
+        list_b.append(Bacteria())
+    rb = list_b[0]
+    list_b[0] = None  一定要注意怎么实现对于实例的删除！！！
+    del rb
+    print(list_b)
+    print("bacteria 数量：", Bacteria.get_num()) """
+    field = Field(15)
+    for i in range(5):
+        x = np.random.randint(0, 10)
+        y = np.random.randint(0, 10)
         field.set_bacteria((x, y))
-    for i in range(600):
-        field.update()
-        print("done%s" % i)
-    list1 = open("food_num", "wb")
-    pickle.dump(Field.get_food_num_list(), list1)
-    list2 = open("bacteria_num", "wb")
-    pickle.dump(Field.get_bacteria_num_list(), list2)
-    plt.plot(Field.get_food_num_list())
-    plt.plot(Field.get_bacteria_num_list())
-    plt.xlabel("time")
-    plt.ylabel("numbers")
-    plt.show()
+    root = Tk()
+    root.title('细菌繁殖的简单模拟')
+    frame1 = LabelFrame(root, text='模拟图像')
+    frame2 = LabelFrame(root, text='设置')
+    frame1.grid(column=0, row=0, columnspan=10, rowspan=10, padx=10, pady=10)
+    frame2.grid(column=11, row=0, columnspan=10, rowspan=10)
+    Label(frame2, text='图像行数').grid(column=11, row=0)
+    Label(frame2, text='图像列数').grid(column=11, row=1)
+    row1 = Entry(frame2)
+    row1.grid(column=12, row=0)
+    column1 = Entry(frame2)
+    column1.grid(column=12, row=1)
+    Label(frame2, text="刷新时间").grid(column=11, row=2)
+    coldtime = Entry(frame2)
+    coldtime.grid(column=12, row=2)
+    Label(frame2, text="秒").grid(column=13, row=2)
+    Label(frame2, text="总时间").grid(column=11, row=3)
+    time1 = Entry(frame2)
+    time1.grid(column=12, row=3)
+    Label(frame2, text="秒").grid(column=13, row=3)
+    num1 = IntVar()
+    num2 = IntVar()
+    Label(frame2, text="细菌个数").grid(column=11, row=4)
+    Label(frame2, textvariable=num1).grid(column=12, row=4)
+    Label(frame2, text="食物个数").grid(column=11, row=5)
+    Label(frame2, textvariable=num2).grid(column=12, row=5)
+    global count
+    count = 0
+    global m
+    m = 0
+
+    def sett():
+        global getlist
+        global n
+        global m
+        n = 0
+        if m != 0:
+            n = m
+        rowdata = int(row1.get())
+        columndata = int(column1.get())
+        coldtimedata = float(coldtime.get())
+        totaltime = float(time1.get())
+        time2 = int(totaltime / coldtimedata)
+        while n <= time2:
+            n = n + 1
+            getlist = field.update()
+            frame1.update()
+            p = 0
+            q = 0
+            for i in range(columndata):
+                for j in range(rowdata):
+                    if getlist[i][j] == 0:
+                        Label(frame1, text="*", fg='blue').grid(column=i,
+                                                                row=j)
+                        q = q + 1
+                    elif getlist[i][j] == 1:
+                        Label(frame1, text="#", fg='black').grid(column=i,
+                                                                 row=j)
+                        p = p + 1
+                    else:
+                        Label(frame1, text=" ").grid(column=i, row=j)
+            num1.set(p)
+            num2.set(q)
+            time.sleep(coldtimedata)
+        m = 0
+
+    def stop():
+        global count
+        count = count + 1
+        rowdata = int(row1.get())
+        columndata = int(column1.get())
+        if count % 2 == 1:
+            for i in range(columndata):
+                for j in range(rowdata):
+                    if getlist[i][j] == 0:
+                        Label(frame1, text="*", fg='blue').grid(column=i,
+                                                                row=j)
+                    elif getlist[i][j] == 1:
+                        Label(frame1, text="#", fg='black').grid(column=i,
+                                                                 row=j)
+                    else:
+                        Label(frame1, text=" ").grid(column=i, row=j)
+            os.system("pause")
+
+    Button(frame2, text="确定", command=sett).grid(column=12, row=6)
+    Button(frame2, text="暂停", command=stop).grid(column=13, row=6)
+    root.mainloop()
